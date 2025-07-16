@@ -12,6 +12,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "extra": {
+      "API_URL": "https://delatte-api.onrender.com/api",
+      "AUTH0_DOMAIN": "dev-d82ap42lb6n7381y.us.auth0.com",
+      "AUTH0_CLIENT_ID": "6KjPP78Z2wqYyLiKGVHdwgttjiXuULLK",
+      "AUTH0_AUDIENCE": "https://delatte.api"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -24,6 +30,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-web-browser",
+      "expo-font",
+      "expo-secure-store"
+    ]
   }
 }
