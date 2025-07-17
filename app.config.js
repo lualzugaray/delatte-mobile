@@ -3,12 +3,18 @@ export default {
       name: 'delatte-mobile',
       slug: 'delatte-mobile',
       extra: {
-        EXPO_PUBLIC_API_URL: 'https://delatte-api.onrender.com/api',
-        EXPO_PUBLIC_AUTH0_DOMAIN: 'dev-d82ap42lb6n7381y.us.auth0.com',
-        EXPO_PUBLIC_AUTH0_CLIENT_ID: '6KjPP78Z2wqYyLiKGVHdwgttjiXuULLK',
-        EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_ID: 'UfkvGwQ7iTGiBtQ0jBsD6rps5n6FivJ8',
-        EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_SECRET: 'XXXXXXXXX',
-        EXPO_PUBLIC_AUTH0_AUDIENCE: 'https://delatte.api',
+        EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
+        EXPO_PUBLIC_AUTH0_DOMAIN: process.env.EXPO_PUBLIC_AUTH0_DOMAIN,
+        EXPO_PUBLIC_AUTH0_CLIENT_ID: process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID,
+        EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_ID: process.env.EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_ID,
+        EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_SECRET: process.env.EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_SECRET,
+        EXPO_PUBLIC_AUTH0_AUDIENCE: process.env.EXPO_PUBLIC_AUTH0_AUDIENCE,
+        EXPO_PUBLIC_GOOGLE_MAPS_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY,
+        EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME,
+        EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET: process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
+        eas: {
+          projectId: 'c7705c53-d3e0-4d4a-9fc5-67863529c818'
+        }
       }
     }
   }
