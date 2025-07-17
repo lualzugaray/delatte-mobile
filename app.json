@@ -4,37 +4,53 @@
     "slug": "delatte-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "extra": {
-      "API_URL": "https://delatte-api.onrender.com/api",
-      "AUTH0_DOMAIN": "dev-d82ap42lb6n7381y.us.auth0.com",
-      "AUTH0_CLIENT_ID": "6KjPP78Z2wqYyLiKGVHdwgttjiXuULLK",
-      "AUTH0_AUDIENCE": "https://delatte.api"
-    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "La app necesita acceso a tus fotos para subir imágenes del café.",
+        "NSCameraUsageDescription": "La app necesita acceso a tu cámara para tomar fotos del café.",
+        "NSLocationWhenInUseUsageDescription": "La app necesita acceso a tu ubicación para ayudarte a registrar la dirección de tu cafetería.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "La app necesita acceso a tu ubicación para ayudarte a registrar la dirección de tu cafetería."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "metro"
     },
     "plugins": [
-      "expo-web-browser",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "La app necesita acceso a tus fotos para subir imágenes del café.",
+          "cameraPermission": "La app necesita acceso a tu cámara para tomar fotos del café."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "La app necesita acceso a tu ubicación para ayudarte a registrar la dirección de tu cafetería.",
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
     ]
   }
 }
