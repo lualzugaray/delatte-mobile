@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { getPendingRegistration,  } from '../services/authService';
 
 export const useAuthValidation = () => {
   const [hasPendingRegistration, setHasPendingRegistration] = useState(false);
@@ -12,10 +11,6 @@ export const useAuthValidation = () => {
 
   const checkAuthStatus = async () => {
     try {
-      // 1. Verificar si hay registro pendiente
-      const pending = await getPendingRegistration();
-      setHasPendingRegistration(!!pending);
-
     } catch (error) {
       console.error('Error checking auth status:', error);
     } finally {
