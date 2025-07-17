@@ -2,6 +2,12 @@ export default {
     expo: {
       name: 'delatte-mobile',
       slug: 'delatte-mobile',
+      updates: {
+        url: 'https://u.expo.dev/c7705c53-d3e0-4d4a-9fc5-67863529c818'
+      },
+      runtimeVersion: {
+        policy: 'appVersion'
+      },
       extra: {
         EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
         EXPO_PUBLIC_AUTH0_DOMAIN: process.env.EXPO_PUBLIC_AUTH0_DOMAIN,
@@ -17,5 +23,5 @@ export default {
         }
       }
     }
-  }
+  };
   

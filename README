@@ -1,0 +1,32 @@
+Delatte Mobile
+
+Aplicación móvil de Delatte, desarrollada con React Native + Expo. Permite a los clientes descubrir
+cafeterías en Montevideo y a los managers gestionar su propia cafetería. Forma parte del proyecto de tesis
+de la carrera Analista de Sistemas (Escuela Da Vinci).
+
+Tecnologías utilizadas:
+- React Native
+- Expo
+- TypeScript
+- Auth0
+- MongoDB (Render)
+- Cloudinary
+- Google Maps API
+
+Instalación local:
+1. Clonar el repo: git clone https://github.com/lualzugaray/delatte-mobile.git
+2. Instalar dependencias: npm install
+3. Crear .env.local con variables necesarias (ver README.md)
+4. Ejecutar con: npx expo start
+
+Versión publicada:
+https://expo.dev/accounts/lualzugaray/projects/delatte-mobile/updates/3882397b-ede7-415a-aac3-958430d7
+86c3
+
+Funcionalidades:
+- Registro e inicio de sesión
+- Explorar y filtrar cafeterías
+- Ver en mapa
+- Favoritos
+- Reseñas
+- Carga y edición de cafetería para managers
