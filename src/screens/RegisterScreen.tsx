@@ -47,6 +47,12 @@ const RegisterScreen = () => {
 
     const handleSubmit = async () => {
         setError(null);
+        console.log('=== REGISTER DEBUG ===');
+        console.log('AUTH0_CLIENT_ID:', process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID);
+        console.log('AUTH0_BACKEND_CLIENT_ID:', process.env.EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_ID);
+        console.log('AUTH0_AUDIENCE:', process.env.EXPO_PUBLIC_AUTH0_AUDIENCE);
+        console.log('API_URL:', process.env.EXPO_PUBLIC_API_URL);
+        console.log('=====================');
 
         if (!formData.email || !formData.password || !formData.nombre || !formData.apellido) {
             setError('Por favor completá todos los campos');
@@ -81,6 +87,7 @@ const RegisterScreen = () => {
                     }),
                 }
             );
+            console.log(signupRes)
 
             if (!signupRes.ok) {
                 const errorData = await signupRes.json();
@@ -120,8 +127,8 @@ const RegisterScreen = () => {
                         password: formData.password,
                         audience: process.env.EXPO_PUBLIC_AUTH0_AUDIENCE,
                         client_id: process.env.EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_ID,
-                        client_secret: process.env.EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_SECRET,
                         connection: 'Username-Password-Authentication',
+                        client_secret: process.env.EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_SECRET,
                     }),
                 }
             );

@@ -108,31 +108,6 @@ export default function ProfileScreen() {
         return res.data.secure_url;
     };
 
-    const handleImagePicker = async () => {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permissionResult.status !== 'granted') {
-            alert('Se necesita permiso para acceder a la galería.');
-            return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets[0]) {
-            try {
-                const url = await uploadToCloudinary(result.assets[0].uri);
-                setProfileImage(url);
-                setFormData((prev: any) => ({ ...prev, profileImage: url }));
-            } catch (error) {
-                Toast.show({ type: 'error', text1: 'Error al subir imagen' });
-            }
-        }
-    };
-
     const normalizeUrl = (url: string) =>
         url && !/^https?:\/\//i.test(url) ? `https://${url}` : url;
 
@@ -178,13 +153,6 @@ export default function ProfileScreen() {
                     <Text style={styles.title}>Mi Perfil</Text>
                     <TouchableOpacity style={styles.editButton} onPress={isEditing ? handleSave : () => setIsEditing(true)}>
                         <Text style={styles.editButtonText}>{isEditing ? 'Guardar' : 'Editar'}</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.section}>
-                    <TouchableOpacity onPress={handleImagePicker}>
-                        <Image source={{ uri: profileImage || 'https://placehold.co/100x100' }} style={styles.profileImage} />
-                        <Text style={styles.imageLabel}>Cambiar imagen</Text>
                     </TouchableOpacity>
                 </View>
 

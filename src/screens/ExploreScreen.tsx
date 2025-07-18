@@ -110,7 +110,6 @@ const ExploreScreen = () => {
                 <Text style={{ fontSize: 10 }}>Debug - Query: {searchQuery} | Search: {search}</Text>
                 <Text style={{ fontSize: 10 }}>Filters: {JSON.stringify(filters)}</Text>
             </View>
-            x
             <View style={styles.searchBar}>
                 <TextInput
                     value={search}

@@ -20,6 +20,64 @@ const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL;
 type CafeDetailsRouteProp = RouteProp<RootStackParamList, 'CafeDetails'>;
 type CafeDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CafeDetails'>;
 
+const SafeImage = ({ 
+  source, 
+  style, 
+  resizeMode = 'cover',
+  onPress 
+}: { 
+  source: { uri: string }, 
+  style: any, 
+  resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center',
+  onPress?: () => void 
+}) => {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleError = () => {
+    console.log('Error loading image:', source.uri);
+    setHasError(true);
+    setIsLoading(false);
+  };
+
+  const handleLoad = () => {
+    setIsLoading(false);
+  };
+
+  const ImageComponent = (
+    <View style={style}>
+      {!hasError ? (
+        <>
+          <Image
+            source={source}
+            style={style}
+            resizeMode={resizeMode}
+            onError={handleError}
+            onLoad={handleLoad}
+          />
+          {isLoading && (
+            <View style={[style, styles.imageLoader]}>
+              <ActivityIndicator size="small" color="#301b0f" />
+            </View>
+          )}
+        </>
+      ) : (
+        <Image
+          source={require('../assets/default-cafe.jpg')} 
+          style={style}
+          resizeMode={resizeMode}
+        />
+      )}
+    </View>
+  );
+
+  return onPress ? (
+    <TouchableOpacity onPress={onPress}>
+      {ImageComponent}
+    </TouchableOpacity>
+  ) : ImageComponent;
+};
+
 const CafeDetails = () => {
   const route = useRoute<CafeDetailsRouteProp>();
   const navigation = useNavigation<CafeDetailsNavigationProp>();
@@ -39,6 +97,7 @@ const CafeDetails = () => {
 
   useEffect(() => {
     fetchCafeDetails();
+    checkFavorite();
   }, [cafeId]);
 
   const fetchCafeDetails = async () => {
@@ -183,18 +242,12 @@ const CafeDetails = () => {
     });
   };
 
-
   const renderGalleryItem = ({ item, index }: { item: string; index: number }) => (
-    <TouchableOpacity
+    <SafeImage
+      source={{ uri: item }}
+      style={styles.galleryImage}
       onPress={() => openImageGallery(index)}
-      style={styles.galleryItem}
-    >
-      <Image
-        source={{ uri: item }}
-        style={styles.galleryImage}
-        onError={(e) => console.error( e.nativeEvent.error)}
-      />
-    </TouchableOpacity>
+    />
   );
 
   const renderImageModalContent = () => (
@@ -212,12 +265,15 @@ const CafeDetails = () => {
       keyExtractor={(item, index) => `gallery-modal-${index}`}
       renderItem={({ item }) => (
         <View style={styles.modalImageContainer}>
-          <Image source={{ uri: item }} style={styles.modalImage} resizeMode="contain" />
+          <SafeImage 
+            source={{ uri: item }} 
+            style={styles.modalImage} 
+            resizeMode="contain" 
+          />
         </View>
       )}
     />
   );
-
 
   if (loading) {
     return (
@@ -238,9 +294,19 @@ const CafeDetails = () => {
     );
   }
 
+  if (!cafe) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Café no encontrado</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Volver</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#301b0f" />
@@ -266,6 +332,7 @@ const CafeDetails = () => {
             showsHorizontalScrollIndicator={false}
             renderItem={renderGalleryItem}
             keyExtractor={(item, index) => `gallery-${index}`}
+            contentContainerStyle={styles.galleryContainer}
           />
         )}
 
@@ -274,78 +341,99 @@ const CafeDetails = () => {
           <Text style={styles.location}>{cafe.address}</Text>
 
           <View style={styles.ratingContainer}>
-            {renderStars(cafe.averageRating)}
-            <Text style={styles.ratingText}>{cafe.averageRating?.toFixed(1)} ({reviews.length} reseñas)</Text>
+            {renderStars(cafe.averageRating || 0)}
+            <Text style={styles.ratingText}>
+              {(cafe.averageRating || 0).toFixed(1)} ({reviews.length} reseñas)
+            </Text>
           </View>
 
-          <Text style={styles.description}>{cafe.description}</Text>
-x
-          <View style={styles.categoriesRow}>
-            {categories.map(cat => (
-              <View key={cat._id} style={styles.categoryTag}>
-                <Text style={styles.categoryText}>{cat.name}</Text>
-              </View>
-            ))}
-          </View>
-x
-          {schedule && formatSchedule(schedule).map(({ day, hours, key }) => (
-            <View key={key} style={styles.scheduleRow}>
-              <Text>{day}:</Text>
-              <Text>{hours}</Text>
+          {cafe.description && (
+            <Text style={styles.description}>{cafe.description}</Text>
+          )}
+
+          {categories.length > 0 && (
+            <View style={styles.categoriesRow}>
+              {categories.map((cat, index) => (
+                <View key={`category-${cat._id || index}`} style={styles.categoryTag}>
+                  <Text style={styles.categoryText}>{cat.name}</Text>
+                </View>
+              ))}
             </View>
-          ))}
+          )}
+
+          {schedule && (
+            <View style={styles.scheduleContainer}>
+              <Text style={styles.scheduleTitle}>Horarios:</Text>
+              {formatSchedule(schedule).map(({ day, hours, key, isOpen }) => (
+                <View key={key} style={styles.scheduleRow}>
+                  <Text style={[styles.scheduleDay, isOpen && styles.openDay]}>{day}:</Text>
+                  <Text style={[styles.scheduleHours, isOpen && styles.openHours]}>{hours}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           <TouchableOpacity onPress={openMap} style={styles.mapButton}>
             <Ionicons name="map-outline" size={20} color="#fff" />
             <Text style={styles.mapButtonText}>Ver en Maps</Text>
           </TouchableOpacity>
+          
           <TouchableOpacity onPress={() => setShowReviewForm(true)} style={styles.reviewButton}>
             <Ionicons name="create-outline" size={20} color="#fff" />
             <Text style={styles.reviewButtonText}>Escribir Reseña</Text>
           </TouchableOpacity>
-
         </View>
 
         <View style={styles.reviewsSection}>
           <Text style={styles.sectionTitle}>Reseñas ({reviews.length})</Text>
           {reviews.length === 0 ? (
-            <Text>Todavía no hay reseñas</Text>
-          ) : reviews.map((rev, idx) => (
-            <View key={rev._id || `review-${idx}`} style={styles.reviewCard}>
-              <View style={styles.reviewHeader}>
-                <Ionicons name="person-circle" size={32} color="#888" style={{ marginRight: 8 }} />
-                <View>
-                  <Text style={styles.reviewName}>
-                    {rev.clientId?.firstName} {rev.clientId?.lastName}
-                  </Text>
-                  <View style={{ flexDirection: 'row' }}>
-                    {renderStars(rev.rating)}
+            <Text style={styles.noReviewsText}>Todavía no hay reseñas</Text>
+          ) : (
+            reviews.map((rev, idx) => (
+              <View key={rev._id || `review-${idx}`} style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <Ionicons name="person-circle" size={32} color="#888" style={{ marginRight: 8 }} />
+                  <View>
+                    <Text style={styles.reviewName}>
+                      {rev.clientId?.firstName || 'Usuario'} {rev.clientId?.lastName || ''}
+                    </Text>
+                    <View style={{ flexDirection: 'row' }}>
+                      {renderStars(rev.rating || 0)}
+                    </View>
                   </View>
                 </View>
+                {rev.comment && (
+                  <Text style={styles.reviewComment}>{rev.comment}</Text>
+                )}
               </View>
-              <Text style={styles.reviewComment}>{rev.comment}</Text>
-            </View>
-          ))}
-
+            ))
+          )}
         </View>
-
       </ScrollView>
 
-      <Modal visible={showImageModal} transparent={true} animationType="slide" onRequestClose={() => setShowImageModal(false)}>
-        <View style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.9)',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}>
+      <Modal 
+        visible={showImageModal} 
+        transparent={true} 
+        animationType="slide" 
+        onRequestClose={() => setShowImageModal(false)}
+      >
+        <View style={styles.modalContainer}>
           {renderImageModalContent()}
-          <TouchableOpacity onPress={() => setShowImageModal(false)} style={{ marginTop: 20 }}>
+          <TouchableOpacity 
+            onPress={() => setShowImageModal(false)} 
+            style={styles.modalCloseButton}
+          >
             <Ionicons name="close-circle" size={40} color="#fff" />
           </TouchableOpacity>
         </View>
       </Modal>
 
-      <ReviewFormModal visible={showReviewForm} cafeId={cafeId} onClose={() => setShowReviewForm(false)} onSuccess={fetchReviews} />
+      <ReviewFormModal 
+        visible={showReviewForm} 
+        cafeId={cafeId} 
+        onClose={() => setShowReviewForm(false)} 
+        onSuccess={fetchReviews} 
+      />
     </SafeAreaView>
   );
 };
@@ -357,6 +445,8 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -364,11 +454,17 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+    backgroundColor: '#301b0f',
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginTop: 20,
   },
   backButtonText: {
-    color: '#301b0f',
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   content: {
     flex: 1,
@@ -433,6 +529,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginVertical: 4,
   },
+  galleryContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
   galleryItem: {
     marginRight: 10,
   },
@@ -440,6 +540,13 @@ const styles = StyleSheet.create({
     width: 200,
     height: 120,
     borderRadius: 8,
+    marginRight: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalImageContainer: {
     width: Dimensions.get('window').width,
@@ -451,6 +558,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 300,
   },
+  modalCloseButton: {
+    marginTop: 20,
+  },
   backBtn: {
     position: 'absolute',
     left: 16,
@@ -460,6 +570,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
+    flex: 1,
   },
   headerRight: {
     flexDirection: 'row',
@@ -500,10 +611,36 @@ const styles = StyleSheet.create({
     gap: 8,
     marginVertical: 8,
   },
+  scheduleContainer: {
+    marginVertical: 16,
+  },
+  scheduleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#301b0f',
+    marginBottom: 8,
+  },
   scheduleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 2,
+    paddingVertical: 2,
+  },
+  scheduleDay: {
+    fontSize: 14,
+    color: '#666',
+  },
+  scheduleHours: {
+    fontSize: 14,
+    color: '#666',
+  },
+  openDay: {
+    color: '#27ae60',
+    fontWeight: '500',
+  },
+  openHours: {
+    color: '#27ae60',
+    fontWeight: '500',
   },
   mapButton: {
     flexDirection: 'row',
@@ -537,6 +674,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
+  noReviewsText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginVertical: 20,
+  },
   reviewImage: {
     width: '100%',
     height: 200,
@@ -563,8 +707,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     marginTop: 4,
+    lineHeight: 20,
   },
-
+  imageLoader: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+  },
 });
 
 export default CafeDetails;

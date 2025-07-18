@@ -37,6 +37,8 @@ const HomeScreen = () => {
     const { state } = useAuth();
 
     useEffect(() => {
+        console.log('=== HOME SCREEN DEBUG ===');
+        console.log('HomeScreen iniciando...');
         axios.get(`${API_URL}/cafes`)
             .then((res) => {
                 if (Array.isArray(res.data)) {

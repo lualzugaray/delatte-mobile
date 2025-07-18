@@ -200,7 +200,6 @@ const MapScreen = () => {
                     );
                 })}
             </MapView>
-            x
             <Modal
                 animationType="slide"
                 transparent={true}

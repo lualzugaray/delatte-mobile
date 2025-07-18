@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 const { EXPO_PUBLIC_API_URL, EXPO_PUBLIC_AUTH0_DOMAIN, EXPO_PUBLIC_AUTH0_CLIENT_ID, EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_ID, EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_SECRET, EXPO_PUBLIC_AUTH0_AUDIENCE } = Constants.expoConfig!.extra!;
-
 const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL;
 
 interface User {
