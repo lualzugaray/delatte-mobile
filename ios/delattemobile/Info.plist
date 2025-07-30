@@ -27,6 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
+          <string>delatte</string>
           <string>com.delatte.mobile</string>
         </array>
       </dict>
