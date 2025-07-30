@@ -7,15 +7,61 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://delatte-api.onrender.com/api",
+        "EXPO_PUBLIC_AUTH0_DOMAIN": "dev-d82ap42lb6n7381y.us.auth0.com",
+        "EXPO_PUBLIC_AUTH0_CLIENT_ID": "6KjPP78Z2wqYyLiKGVHdwgttjiXuULLK",
+        "EXPO_PUBLIC_AUTH0_AUDIENCE": "https://delatte.api",
+        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyDakEGaENxyIMjOFNbP9pvH3SFz2JtuTCU",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dx4vlzl5r",
+        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "delatte_unsigned"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://delatte-api.onrender.com/api",
+        "EXPO_PUBLIC_AUTH0_DOMAIN": "dev-d82ap42lb6n7381y.us.auth0.com",
+        "EXPO_PUBLIC_AUTH0_CLIENT_ID": "6KjPP78Z2wqYyLiKGVHdwgttjiXuULLK",
+        "EXPO_PUBLIC_AUTH0_AUDIENCE": "https://delatte.api",
+        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyDakEGaENxyIMjOFNbP9pvH3SFz2JtuTCU",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dx4vlzl5r",
+        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "delatte_unsigned"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://delatte-api.onrender.com/api",
+        "EXPO_PUBLIC_AUTH0_DOMAIN": "dev-d82ap42lb6n7381y.us.auth0.com",
+        "EXPO_PUBLIC_AUTH0_CLIENT_ID": "6KjPP78Z2wqYyLiKGVHdwgttjiXuULLK",
+        "EXPO_PUBLIC_AUTH0_AUDIENCE": "https://delatte.api",
+        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyDakEGaENxyIMjOFNbP9pvH3SFz2JtuTCU",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dx4vlzl5r",
+        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "delatte_unsigned"
+      }
+    },
+    "apk": {
+      "autoIncrement": true,
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://delatte-api.onrender.com/api",
+        "EXPO_PUBLIC_AUTH0_DOMAIN": "dev-d82ap42lb6n7381y.us.auth0.com",
+        "EXPO_PUBLIC_AUTH0_CLIENT_ID": "6KjPP78Z2wqYyLiKGVHdwgttjiXuULLK",
+        "EXPO_PUBLIC_AUTH0_AUDIENCE": "https://delatte.api",
+        "EXPO_PUBLIC_AUTH0_CLIENT_SECRET": "9FcToTZBPuX3LFOMIfxWMw_uPLXAcpjLsLQL5fErIK9DiLQyLSSLzTwj6Iijw64P",
+        "EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_ID": "UfkvGwQ7iTGiBtQ0jBsD6rps5n6FivJ8",
+        "EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_SECRET": "B-kYaR7iOEZGKv4S0E95UNVD6HMZ3PSnLF4lY_TChy-RLAA6UiSlwj7aKXWZ3G1U",
+        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyDakEGaENxyIMjOFNbP9pvH3SFz2JtuTCU",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dx4vlzl5r",
+        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "delatte_unsigned"
+      }
     }
   },
   "submit": {

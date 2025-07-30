@@ -9,6 +9,7 @@ import {
     Image,
     Dimensions,
     Modal,
+    Platform,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -58,12 +59,15 @@ const MapScreen = () => {
     const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
     const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
-    const [region, setRegion] = useState<Region>({
+    
+    const defaultRegion = {
         latitude: -34.9011,
         longitude: -56.1645,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
-    });
+    };
+
+    const [region, setRegion] = useState<Region>(defaultRegion);
 
     useEffect(() => {
         requestLocationPermission();
@@ -75,19 +79,39 @@ const MapScreen = () => {
             const { status } = await Location.requestForegroundPermissionsAsync();
 
             if (status === 'granted') {
-                const location = await Location.getCurrentPositionAsync({});
-                const userCoords = {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                };
+                try {
+                    const location = await Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Balanced,
+                    });
+                    
+                    const userCoords = {
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude,
+                    };
 
-                setUserLocation(userCoords);
-                setRegion({
-                    ...userCoords,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
-                });
+                    console.log('Ubicación del usuario obtenida:', userCoords);
+                    setUserLocation(userCoords);
+                    
+                    const isInUruguay = 
+                        userCoords.latitude >= -35.5 && 
+                        userCoords.latitude <= -30 &&
+                        userCoords.longitude >= -59 && 
+                        userCoords.longitude <= -53;
+                    
+                    if (isInUruguay) {
+                        setRegion({
+                            ...userCoords,
+                            latitudeDelta: 0.0922,
+                            longitudeDelta: 0.0421,
+                        });
+                    } else {
+                        console.log('Ubicación fuera de Uruguay, manteniendo centrado en Montevideo');
+                    }
+                } catch (locationError) {
+                    console.log('Error obteniendo ubicación:', locationError);
+                }
             } else {
+                console.log('Permisos de ubicación denegados');
                 Alert.alert(
                     'Permisos de ubicación',
                     'Para una mejor experiencia, permite el acceso a tu ubicación',
@@ -95,47 +119,98 @@ const MapScreen = () => {
                 );
             }
         } catch (error) {
-            console.error(error);
+            console.log('Error con permisos de ubicación:', error);
         }
     };
 
     const fetchCafes = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API_URL}/cafes`);
+            console.log('Obteniendo cafés desde:', API_URL);
+            
+            if (!API_URL) {
+                console.log('API_URL no configurada');
+                setCafes([]);
+                return;
+            }
+
+            const response = await axios.get(`${API_URL}/cafes`, {
+                timeout: 10000,
+            });
 
             if (Array.isArray(response.data)) {
                 const cafesWithLocation: Cafe[] = response.data.filter(
-                    (cafe: Cafe) => cafe.location?.lat && cafe.location?.lng
+                    (cafe: Cafe) => cafe.location?.lat && 
+                                   cafe.location?.lng &&
+                                   typeof cafe.location.lat === 'number' &&
+                                   typeof cafe.location.lng === 'number' &&
+                                   !isNaN(cafe.location.lat) &&
+                                   !isNaN(cafe.location.lng)
                 );
+                
+                console.log('Cafés con ubicación encontrados:', cafesWithLocation.length);
                 setCafes(cafesWithLocation);
             } else {
+                console.log('Response data no es array:', typeof response.data);
+                setCafes([]);
             }
         } catch (error) {
+            console.log('Error cargando cafés:', error);
             Alert.alert('Error', 'No se pudieron cargar los cafés');
+            setCafes([]);
         } finally {
             setLoading(false);
         }
     };
 
     const handleMarkerPress = (cafe: Cafe) => {
-        setSelectedCafe(cafe);
-        setModalVisible(true);
+        try {
+            console.log('Marker presionado:', cafe.name);
+            setSelectedCafe(cafe);
+            setModalVisible(true);
+        } catch (error) {
+            console.log('Error en handleMarkerPress:', error);
+        }
     };
 
     const handleCafePress = (cafeId: string) => {
-        setModalVisible(false);
-        navigation.navigate('CafeDetails', { cafeId });
+        try {
+            setModalVisible(false);
+            navigation.navigate('CafeDetails', { cafeId });
+        } catch (error) {
+            console.log('Error navegando a detalles:', error);
+            setModalVisible(false);
+        }
     };
 
     const centerOnUserLocation = () => {
-        if (userLocation) {
-            setRegion({
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-            });
+        try {
+            if (userLocation) {
+                console.log('Centrando en ubicación del usuario');
+                setRegion({
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                });
+            } else {
+                console.log('No hay ubicación del usuario disponible');
+                Alert.alert(
+                    'Ubicación no disponible', 
+                    'No se pudo obtener tu ubicación actual'
+                );
+            }
+        } catch (error) {
+            console.log('Error centrando ubicación:', error);
+        }
+    };
+
+    const centerOnMontevideo = () => {
+        try {
+            console.log('Centrando en Montevideo');
+            setRegion(defaultRegion);
+        } catch (error) {
+            console.log('Error centrando en Montevideo:', error);
         }
     };
 
@@ -158,48 +233,71 @@ const MapScreen = () => {
                     <Text style={styles.backButtonText}>← Volver</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Mapa de Cafés</Text>
-                {userLocation && (
+                
+                <View style={styles.headerButtons}>
                     <TouchableOpacity
-                        style={styles.locationButton}
-                        onPress={centerOnUserLocation}
+                        style={styles.montevideoButton}
+                        onPress={centerOnMontevideo}
                     >
-                        <Text style={styles.locationButtonText}>📍</Text>
+                        <Text style={styles.locationButtonText}>🏙️</Text>
                     </TouchableOpacity>
-                )}
+                    
+                    {userLocation && (
+                        <TouchableOpacity
+                            style={styles.locationButton}
+                            onPress={centerOnUserLocation}
+                        >
+                            <Text style={styles.locationButtonText}>📍</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
 
             <MapView
-                provider={PROVIDER_GOOGLE}
+                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
                 style={styles.map}
+                initialRegion={defaultRegion}
                 region={region}
                 onRegionChangeComplete={setRegion}
-                showsUserLocation={true}
+                showsUserLocation={false}
                 showsMyLocationButton={false}
                 toolbarEnabled={false}
+                mapType="standard"
+                maxZoomLevel={18}
+                minZoomLevel={8}
+                onMapReady={() => {
+                    console.log('Mapa principal listo');
+                }}
             >
                 {cafes.map((cafe) => {
                     if (!cafe.location?.lat || !cafe.location?.lng) {
                         return null;
                     }
 
-                    return (
-                        <Marker
-                            key={cafe._id}
-                            coordinate={{
-                                latitude: cafe.location.lat,
-                                longitude: cafe.location.lng,
-                            }}
-                            title={cafe.name}
-                            description={cafe.address || 'Ver más detalles'}
-                            onPress={() => handleMarkerPress(cafe)}
-                        >
-                            <View style={styles.markerContainer}>
-                                <Text style={styles.markerIcon}>☕</Text>
-                            </View>
-                        </Marker>
-                    );
+                    try {
+                        return (
+                            <Marker
+                                key={cafe._id}
+                                coordinate={{
+                                    latitude: cafe.location.lat,
+                                    longitude: cafe.location.lng,
+                                }}
+                                title={cafe.name}
+                                description={cafe.address || 'Toca para ver más detalles'}
+                                onPress={() => handleMarkerPress(cafe)}
+                            >
+                                <View style={styles.markerContainer}>
+                                    <Text style={styles.markerIcon}>☕</Text>
+                                </View>
+                            </Marker>
+                        );
+                    } catch (error) {
+                        console.log('Error renderizando marker:', error);
+                        return null;
+                    }
                 })}
             </MapView>
+
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -212,16 +310,23 @@ const MapScreen = () => {
                             <>
                                 <Image
                                     source={{
-                                        uri: selectedCafe.coverImage || selectedCafe.gallery?.[0] || 'https://via.placeholder.com/300x200',
+                                        uri: selectedCafe.coverImage || 
+                                             selectedCafe.gallery?.[0] || 
+                                             'https://via.placeholder.com/300x200/cccccc/666666?text=Cafe',
                                     }}
                                     style={styles.modalImage}
-                                    defaultSource={{ uri: 'https://via.placeholder.com/300x200' }}
+                                    defaultSource={{
+                                        uri: 'https://via.placeholder.com/300x200/cccccc/666666?text=Cafe'
+                                    }}
                                 />
 
                                 <View style={styles.modalContent}>
-                                    <Text style={styles.modalTitle}>{selectedCafe.name}</Text>
+                                    <Text style={styles.modalTitle}>
+                                        {selectedCafe.name || 'Café'}
+                                    </Text>
 
-                                    {selectedCafe.averageRating && selectedCafe.averageRating > 0 && (
+                                    {selectedCafe.averageRating && 
+                                     selectedCafe.averageRating > 0 && (
                                         <View style={styles.ratingContainer}>
                                             <StarRating rating={selectedCafe.averageRating} />
                                             <Text style={styles.ratingText}>
@@ -231,7 +336,9 @@ const MapScreen = () => {
                                     )}
 
                                     {selectedCafe.address && (
-                                        <Text style={styles.modalAddress}>{selectedCafe.address}</Text>
+                                        <Text style={styles.modalAddress}>
+                                            {selectedCafe.address}
+                                        </Text>
                                     )}
 
                                     {selectedCafe.description && (
@@ -264,7 +371,7 @@ const MapScreen = () => {
 
             <View style={styles.bottomInfo}>
                 <Text style={styles.infoText}>
-                    {cafes.length} cafés encontrados
+                    {cafes.length} cafés encontrados en Montevideo
                 </Text>
                 <TouchableOpacity
                     style={styles.refreshButton}
@@ -322,6 +429,19 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: 'center',
     },
+    headerButtons: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    montevideoButton: {
+        padding: 8,
+        backgroundColor: '#AC7851',
+        borderRadius: 20,
+        width: 36,
+        height: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     locationButton: {
         padding: 8,
         backgroundColor: '#301b0f',
@@ -372,6 +492,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 200,
         resizeMode: 'cover',
+        backgroundColor: '#f0f0f0',
     },
     modalContent: {
         padding: 20,

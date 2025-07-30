@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
     TouchableOpacity,
     StyleSheet,
+    Platform,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
@@ -27,36 +28,79 @@ interface CafeMapProps {
 
 const CafeMap: React.FC<CafeMapProps> = ({ cafes, isPreview = false }) => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const [mapError, setMapError] = useState(false);
+    const [mapLoaded, setMapLoaded] = useState(false);
 
-    const cafesWithLocation = cafes.filter(
-        cafe => cafe.location?.lat && cafe.location?.lng
+    const safeCafes = Array.isArray(cafes) ? cafes : [];
+    const cafesWithLocation = safeCafes.filter(
+        cafe => cafe && 
+               cafe.location && 
+               typeof cafe.location.lat === 'number' && 
+               typeof cafe.location.lng === 'number' &&
+               !isNaN(cafe.location.lat) && 
+               !isNaN(cafe.location.lng)
     );
 
     const defaultRegion = {
-        latitude: -34.9011,
+        latitude: -34.9011, 
         longitude: -56.1645,
-        latitudeDelta: 0.05,
+        latitudeDelta: 0.05, 
         longitudeDelta: 0.05,
     };
 
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (!mapLoaded) {
+                setMapError(true);
+            }
+        }, 15000);
+
+        return () => clearTimeout(timeout);
+    }, [mapLoaded]);
+
     const handleMarkerPress = (cafeId: string) => {
-        navigation.navigate('CafeDetails', { cafeId });
+        try {
+            if (cafeId && typeof cafeId === 'string') {
+                console.log('Navegando a café:', cafeId);
+                navigation.navigate('CafeDetails', { cafeId });
+            }
+        } catch (error) {
+            console.log('Error navegando a café:', error);
+        }
     };
 
     const handleExplorePress = () => {
-        navigation.dispatch(
-            CommonActions.navigate({
-                name: 'Explore'
-            })
-        );
+        try {
+            navigation.dispatch(
+                CommonActions.navigate({
+                    name: 'Explore'
+                })
+            );
+        } catch (error) {
+            console.log('Error navegando a explorar:', error);
+        }
     };
 
     const handleMapPress = () => {
-        navigation.dispatch(
-            CommonActions.navigate({
-                name: 'Map'
-            })
-        );
+        try {
+            navigation.dispatch(
+                CommonActions.navigate({
+                    name: 'Map'
+                })
+            );
+        } catch (error) {
+            console.log('Error navegando a mapa:', error);
+        }
+    };
+
+    const handleMapReady = () => {
+        console.log('CafeMap: Mapa listo');
+        setMapLoaded(true);
+    };
+
+    const handleMapError = (error: any) => {
+        console.log('CafeMap: Error del mapa:', error);
+        setMapError(true);
     };
 
     if (cafesWithLocation.length === 0) {
@@ -76,37 +120,69 @@ const CafeMap: React.FC<CafeMapProps> = ({ cafes, isPreview = false }) => {
         );
     }
 
+    if (mapError) {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorIcon}>🗺️</Text>
+                <Text style={styles.errorTitle}>Mapa no disponible</Text>
+                <Text style={styles.errorSubtext}>
+                    {cafesWithLocation.length} cafés encontrados en Montevideo
+                </Text>
+                <TouchableOpacity
+                    style={styles.exploreButton}
+                    onPress={handleExplorePress}
+                >
+                    <Text style={styles.exploreButtonText}>Ver lista de cafés</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
         <View style={[styles.container, isPreview && styles.previewContainer]}>
             <MapView
-                provider={PROVIDER_GOOGLE}
+                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
                 style={styles.map}
-                region={defaultRegion}
-                showsUserLocation={true}
+                initialRegion={defaultRegion} 
+                showsUserLocation={false}
                 showsMyLocationButton={false}
                 showsCompass={false}
                 scrollEnabled={!isPreview}
                 zoomEnabled={!isPreview}
                 rotateEnabled={false}
                 pitchEnabled={false}
+                onMapReady={handleMapReady}
+                loadingEnabled={true}
+                loadingIndicatorColor="#301b0f"
+                loadingBackgroundColor="#f8f9fa"
+                mapType="standard"
+                maxZoomLevel={18}
+                minZoomLevel={10}
             >
-                {cafesWithLocation.map((cafe) => (
-                    <Marker
-                        key={cafe._id}
-                        coordinate={{
-                            latitude: cafe.location!.lat,
-                            longitude: cafe.location!.lng,
-                        }}
-                        title={cafe.name}
-                        onPress={() => handleMarkerPress(cafe._id)}
-                    >
-                        <View style={styles.markerContainer}>
-                            <View style={styles.marker}>
-                                <Text style={styles.markerText}>☕</Text>
+                {cafesWithLocation.map((cafe) => {
+                    if (!cafe || !cafe._id || !cafe.location) {
+                        return null;
+                    }
+
+                    return (
+                        <Marker
+                            key={cafe._id}
+                            coordinate={{
+                                latitude: cafe.location.lat,
+                                longitude: cafe.location.lng,
+                            }}
+                            title={cafe.name || 'Café'}
+                            description="Toca para ver detalles"
+                            onPress={() => handleMarkerPress(cafe._id)}
+                        >
+                            <View style={styles.markerContainer}>
+                                <View style={styles.marker}>
+                                    <Text style={styles.markerText}>☕</Text>
+                                </View>
                             </View>
-                        </View>
-                    </Marker>
-                ))}
+                        </Marker>
+                    );
+                })}
             </MapView>
 
             {isPreview && (
@@ -118,7 +194,7 @@ const CafeMap: React.FC<CafeMapProps> = ({ cafes, isPreview = false }) => {
                     <View style={styles.overlayContent}>
                         <Text style={styles.overlayText}>Ver mapa completo</Text>
                         <Text style={styles.overlaySubtext}>
-                            {cafesWithLocation.length} cafés encontrados
+                            {cafesWithLocation.length} cafés en Montevideo
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -156,6 +232,32 @@ const styles = StyleSheet.create({
     },
     emptySubtext: {
         fontSize: 14,
+        color: '#7a7a7a',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    errorContainer: {
+        height: 200,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#ffc107',
+        borderStyle: 'dashed',
+    },
+    errorIcon: {
+        fontSize: 32,
+        marginBottom: 8,
+    },
+    errorTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#301b0f',
+        marginBottom: 4,
+    },
+    errorSubtext: {
+        fontSize: 12,
         color: '#7a7a7a',
         textAlign: 'center',
         marginBottom: 16,

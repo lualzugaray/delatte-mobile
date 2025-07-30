@@ -12,7 +12,6 @@ export const useAuthValidation = () => {
   const checkAuthStatus = async () => {
     try {
     } catch (error) {
-      console.error('Error checking auth status:', error);
     } finally {
       setIsCheckingAuth(false);
     }

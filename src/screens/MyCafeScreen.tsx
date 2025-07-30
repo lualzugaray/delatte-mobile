@@ -20,7 +20,7 @@ import Toast from 'react-native-toast-message';
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL;
+const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL as string;
 const CLOUDINARY_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_CLOUDINARY_URL;
 const CLOUDINARY_UPLOAD_PRESET = Constants.expoConfig!.extra!.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 const { width } = Dimensions.get('window');

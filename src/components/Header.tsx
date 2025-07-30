@@ -48,7 +48,6 @@ const Header: React.FC<HeaderProps> = ({
                 routes: [{ name: 'Login' }],
               });
             } catch (error) {
-              console.error('Error during logout:', error);
             }
           },          
         },

@@ -12,7 +12,7 @@ import FavoriteCafeCard from '../components/FavoriteCafeCard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
-const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL;
+const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL as string;
 const CLOUDINARY_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_CLOUDINARY_URL;
 const CLOUDINARY_UPLOAD_PRESET = Constants.expoConfig!.extra!.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 

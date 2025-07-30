@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView,
   Linking,
@@ -15,7 +15,7 @@ import ReviewFormModal from '../components/ReviewFormModal';
 import { Image, Alert, Share, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL;
+const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL as string;
 
 type CafeDetailsRouteProp = RouteProp<RootStackParamList, 'CafeDetails'>;
 type CafeDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CafeDetails'>;
@@ -34,19 +34,46 @@ const SafeImage = ({
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const handleError = () => {
-    console.log('Error loading image:', source.uri);
-    setHasError(true);
-    setIsLoading(false);
-  };
+  useEffect(() => {
+    if (source?.uri) {
+      setHasError(false);
+      setIsLoading(true);
+    } else {
+      setHasError(true);
+      setIsLoading(false);
+    }
+  }, [source?.uri]);
 
-  const handleLoad = () => {
-    setIsLoading(false);
-  };
+  const handleError = useCallback(() => {
+    try {
+      setHasError(true);
+      setIsLoading(false);
+    } catch (e) {
+      setHasError(true);
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleLoad = useCallback(() => {
+    try {
+      setIsLoading(false);
+    } catch (e) {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleLoadStart = useCallback(() => {
+    try {
+      setIsLoading(true);
+    } catch (e) {
+    }
+  }, []);
+
+  const hasValidUri = source?.uri && typeof source.uri === 'string' && source.uri.length > 0;
 
   const ImageComponent = (
     <View style={style}>
-      {!hasError ? (
+      {!hasError && hasValidUri ? (
         <>
           <Image
             source={source}
@@ -54,6 +81,8 @@ const SafeImage = ({
             resizeMode={resizeMode}
             onError={handleError}
             onLoad={handleLoad}
+            onLoadStart={handleLoadStart}
+            fadeDuration={200}
           />
           {isLoading && (
             <View style={[style, styles.imageLoader]}>
@@ -72,7 +101,7 @@ const SafeImage = ({
   );
 
   return onPress ? (
-    <TouchableOpacity onPress={onPress}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
       {ImageComponent}
     </TouchableOpacity>
   ) : ImageComponent;
@@ -87,8 +116,6 @@ const CafeDetails = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showUserModal, setShowUserModal] = useState(false);
   const [cafe, setCafe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,21 +123,38 @@ const CafeDetails = () => {
   const screenWidth = Dimensions.get('window').width;
 
   useEffect(() => {
-    fetchCafeDetails();
-    checkFavorite();
+    if (cafeId) {
+      fetchCafeDetails();
+      checkFavorite();
+    }
   }, [cafeId]);
 
   const fetchCafeDetails = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!cafeId) {
+        throw new Error('No cafe ID provided');
+      }
+
       const response = await axios.get(`${API_URL}/cafes/${cafeId}`);
       const cafeData = response.data;
+      
+      if (!cafeData) {
+        throw new Error('No cafe data received');
+      }
+
       setCafe(cafeData);
       if (Array.isArray(cafeData.reviews)) {
         setReviews(cafeData.reviews);
+      } else {
+        setReviews([]);
       }
     } catch (err) {
       setError('Error al cargar los detalles del café');
+      setCafe(null);
+      setReviews([]);
     } finally {
       setLoading(false);
     }
@@ -118,39 +162,51 @@ const CafeDetails = () => {
 
   const fetchReviews = async () => {
     try {
+      if (!cafeId) return;
+      
       const { data } = await axios.get(`${API_URL}/reviews?cafeId=${cafeId}`);
-      setReviews(data);
+      if (Array.isArray(data)) {
+        setReviews(data);
+      }
     } catch (error) {
-      console.error(error);
+      setReviews([]);
     }
   };
 
   const checkFavorite = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) return;
+      if (!token || !cafeId) return;
+      
       const { data } = await axios.get(`${API_URL}/clients/me/favorites`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setIsFavorite(data.some((f: any) => f._id === cafeId));
-    } catch { }
+      
+      if (Array.isArray(data)) {
+        setIsFavorite(data.some((f: any) => f?._id === cafeId));
+      }
+    } catch (error) {
+      setIsFavorite(false);
+    }
   };
 
   const toggleFavorite = async () => {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) {
-      Alert.alert(
-        'Inicio de sesión requerido',
-        'Debes iniciar sesión como cliente para agregar favoritos',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Iniciar sesión', onPress: () => navigation.navigate('Login' as never) }
-        ]
-      );
-      return;
-    }
-
     try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert(
+          'Inicio de sesión requerido',
+          'Debes iniciar sesión como cliente para agregar favoritos',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Iniciar sesión', onPress: () => navigation.navigate('Login' as never) }
+          ]
+        );
+        return;
+      }
+
+      if (!cafeId) return;
+
       const url = `${API_URL}/clients/me/favorites/${cafeId}`;
       if (isFavorite) {
         await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -161,60 +217,78 @@ const CafeDetails = () => {
       }
       setIsFavorite(!isFavorite);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Solo los clientes registrados pueden agregar favoritos';
+      const errorMessage = error?.response?.data?.message || 'Solo los clientes registrados pueden agregar favoritos';
       Alert.alert('Error', errorMessage);
     }
   };
 
-  const openMap = () => {
-    if (!cafe?.location) return;
-    const { lat, lng } = cafe.location;
-    Linking.openURL(`https://maps.google.com/?q=${lat},${lng}`);
+  const openMap = async () => {
+    try {
+      if (!cafe?.location?.lat || !cafe?.location?.lng) {
+        Alert.alert('Error', 'Ubicación no disponible');
+        return;
+      }
+      const { lat, lng } = cafe.location;
+      const url = `https://maps.google.com/?q=${lat},${lng}`;
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'No se puede abrir el mapa');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se puede abrir el mapa');
+    }
   };
 
   const openImageGallery = (index: number) => {
-    setSelectedImageIndex(index);
-    setShowImageModal(true);
+    try {
+      const gallery = (cafe as any)?.gallery ?? [];
+      if (!gallery || gallery.length === 0) {
+        Alert.alert('Error', 'No hay imágenes para mostrar');
+        return;
+      }
+      
+      if (index < 0 || index >= gallery.length) {
+        setSelectedImageIndex(0);
+      } else {
+        setSelectedImageIndex(index);
+      }
+      
+      setShowImageModal(true);
+    } catch (error) {
+    }
   };
 
   const schedule = (cafe as any)?.schedule;
   const gallery: string[] = (cafe as any)?.gallery ?? [];
   const categories: { _id: string; name: string }[] = (cafe as any)?.categories ?? [];
 
-  const isOpenNow = () => {
-    if (!schedule) return false;
-    const now = new Date();
-    const keys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayObj = schedule[keys[now.getDay()]];
-    if (!dayObj || dayObj.isClosed || !dayObj.open || !dayObj.close) return false;
-
-    const [oh, om] = dayObj.open.split(':').map(Number);
-    const [ch, cm] = dayObj.close.split(':').map(Number);
-    const openTime = new Date().setHours(oh, om, 0, 0);
-    const closeTime = new Date().setHours(ch, cm, 0, 0);
-    const currentTime = now.getTime();
-
-    return currentTime >= openTime && currentTime <= closeTime;
-  };
-
   const renderStars = (rating: number) => {
-    const icons = [];
-    const full = Math.floor(rating);
-    const half = rating % 1 >= 0.5;
+    try {
+      const icons = [];
+      const safeRating = Math.max(0, Math.min(5, rating || 0)); 
+      const full = Math.floor(safeRating);
+      const half = safeRating % 1 >= 0.5;
 
-    for (let i = 0; i < full; i++) {
-      icons.push(<Ionicons key={`full-${i}`} name="star" size={16} color="#FFD700" />);
+      for (let i = 0; i < full; i++) {
+        icons.push(<Ionicons key={`full-${i}`} name="star" size={16} color="#FFD700" />);
+      }
+      if (half) {
+        icons.push(<Ionicons key="half" name="star-half" size={16} color="#FFD700" />);
+      }
+      for (let i = 0; i < 5 - full - (half ? 1 : 0); i++) {
+        icons.push(<Ionicons key={`empty-${i}`} name="star-outline" size={16} color="#DDD" />);
+      }
+      return <View style={styles.starsContainer}>{icons}</View>;
+    } catch (error) {
+      return <View style={styles.starsContainer}></View>;
     }
-    if (half) {
-      icons.push(<Ionicons key="half" name="star-half" size={16} color="#FFD700" />);
-    }
-    for (let i = 0; i < 5 - full - (half ? 1 : 0); i++) {
-      icons.push(<Ionicons key={`empty-${i}`} name="star-outline" size={16} color="#DDD" />);
-    }
-    return <View style={styles.starsContainer}>{icons}</View>;
   };
 
   const formatSchedule = (s: any) => {
+    if (!s || typeof s !== 'object') return [];
+    
     const daysMapping = [
       { key: 'lunes', label: 'Lunes' },
       { key: 'martes', label: 'Martes' },
@@ -226,82 +300,106 @@ const CafeDetails = () => {
     ];
 
     return daysMapping.map(({ key, label }) => {
-      const dayData = s[key];
-      let hours = 'Cerrado';
+      try {
+        const dayData = s[key];
+        let hours = 'Cerrado';
 
-      if (dayData && !dayData.isClosed && dayData.open && dayData.close) {
-        hours = `${dayData.open} - ${dayData.close}`;
+        if (dayData && !dayData.isClosed && dayData.open && dayData.close) {
+          hours = `${dayData.open} - ${dayData.close}`;
+        }
+
+        return {
+          day: label,
+          hours,
+          key: `schedule-${key}`,
+          isOpen: dayData && !dayData.isClosed && dayData.open && dayData.close
+        };
+      } catch (error) {
+        return {
+          day: label,
+          hours: 'Cerrado',
+          key: `schedule-${key}`,
+          isOpen: false
+        };
       }
-
-      return {
-        day: label,
-        hours,
-        key: `schedule-${key}`,
-        isOpen: dayData && !dayData.isClosed && dayData.open && dayData.close
-      };
     });
   };
 
-  const renderGalleryItem = ({ item, index }: { item: string; index: number }) => (
-    <SafeImage
-      source={{ uri: item }}
-      style={styles.galleryImage}
-      onPress={() => openImageGallery(index)}
-    />
-  );
+  const renderGalleryItem = ({ item, index }: { item: string; index: number }) => {
+    if (!item || typeof item !== 'string') {
+      return null;
+    }
+    
+    return (
+      <SafeImage
+        source={{ uri: item }}
+        style={styles.galleryImage}
+        onPress={() => openImageGallery(index)}
+      />
+    );
+  };
 
-  const renderImageModalContent = () => (
-    <FlatList
-      data={gallery}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-      initialScrollIndex={selectedImageIndex}
-      getItemLayout={(data, index) => ({
-        length: screenWidth,
-        offset: screenWidth * index,
-        index,
-      })}
-      keyExtractor={(item, index) => `gallery-modal-${index}`}
-      renderItem={({ item }) => (
+  const renderImageModalContent = () => {
+    if (!gallery || gallery.length === 0) {
+      return (
         <View style={styles.modalImageContainer}>
-          <SafeImage 
-            source={{ uri: item }} 
-            style={styles.modalImage} 
-            resizeMode="contain" 
-          />
+          <Text style={{ color: 'white', textAlign: 'center' }}>No hay imágenes disponibles</Text>
         </View>
-      )}
-    />
-  );
+      );
+    }
+
+    return (
+      <FlatList
+        data={gallery}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        initialScrollIndex={selectedImageIndex}
+        getItemLayout={(data, index) => ({
+          length: screenWidth,
+          offset: screenWidth * index,
+          index,
+        })}
+        keyExtractor={(item, index) => `gallery-modal-${index}`}
+        renderItem={({ item }) => {
+          if (!item || typeof item !== 'string') {
+            return (
+              <View style={styles.modalImageContainer}>
+                <Text style={{ color: 'white', textAlign: 'center' }}>Imagen no disponible</Text>
+              </View>
+            );
+          }
+          
+          return (
+            <View style={styles.modalImageContainer}>
+              <SafeImage 
+                source={{ uri: item }} 
+                style={styles.modalImage} 
+                resizeMode="contain" 
+              />
+            </View>
+          );
+        }}
+      />
+    );
+  };
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <ActivityIndicator size="large" color="#301b0f" style={{ marginTop: 100 }} />
-      </View>
+      </SafeAreaView>
     );
   }
 
-  if (error) {
+  if (error || !cafe) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.errorText}>{error || 'Café no encontrado'}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>Volver</Text>
         </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (!cafe) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Café no encontrado</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Volver</Text>
-        </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -311,13 +409,20 @@ const CafeDetails = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#301b0f" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{cafe.name}</Text>
+        <Text style={styles.headerTitle}>{cafe?.name || 'Café'}</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity onPress={toggleFavorite} style={styles.iconBtn}>
             <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color="#e74c3c" />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Share.share({ message: `Echa un vistazo a ${cafe.name}: https://delatte.app/cafes/${cafeId}` })}
+            onPress={async () => {
+              try {
+                await Share.share({ 
+                  message: `Echa un vistazo a ${cafe?.name || 'este café'}: https://delatte.app/cafes/${cafeId}` 
+                });
+              } catch (error) {
+              }
+            }}
             style={styles.iconBtn}>
             <Ionicons name="share-outline" size={24} color="#301b0f" />
           </TouchableOpacity>
@@ -325,9 +430,9 @@ const CafeDetails = () => {
       </View>
 
       <ScrollView>
-        {gallery.length > 0 && (
+        {gallery && gallery.length > 0 && (
           <FlatList
-            data={gallery}
+            data={gallery.filter(item => item && typeof item === 'string')}
             horizontal
             showsHorizontalScrollIndicator={false}
             renderItem={renderGalleryItem}
@@ -337,23 +442,23 @@ const CafeDetails = () => {
         )}
 
         <View style={styles.cafeInfo}>
-          <Text style={styles.cafeName}>{cafe.name}</Text>
-          <Text style={styles.location}>{cafe.address}</Text>
+          <Text style={styles.cafeName}>{cafe?.name || 'Café'}</Text>
+          <Text style={styles.location}>{cafe?.address || 'Dirección no disponible'}</Text>
 
           <View style={styles.ratingContainer}>
-            {renderStars(cafe.averageRating || 0)}
+            {renderStars(cafe?.averageRating || 0)}
             <Text style={styles.ratingText}>
-              {(cafe.averageRating || 0).toFixed(1)} ({reviews.length} reseñas)
+              {(cafe?.averageRating || 0).toFixed(1)} ({reviews?.length || 0} reseñas)
             </Text>
           </View>
 
-          {cafe.description && (
+          {cafe?.description && typeof cafe.description === 'string' && (
             <Text style={styles.description}>{cafe.description}</Text>
           )}
 
-          {categories.length > 0 && (
+          {categories && Array.isArray(categories) && categories.length > 0 && (
             <View style={styles.categoriesRow}>
-              {categories.map((cat, index) => (
+              {categories.filter(cat => cat && cat.name).map((cat, index) => (
                 <View key={`category-${cat._id || index}`} style={styles.categoryTag}>
                   <Text style={styles.categoryText}>{cat.name}</Text>
                 </View>
@@ -361,7 +466,7 @@ const CafeDetails = () => {
             </View>
           )}
 
-          {schedule && (
+          {schedule && typeof schedule === 'object' && (
             <View style={styles.scheduleContainer}>
               <Text style={styles.scheduleTitle}>Horarios:</Text>
               {formatSchedule(schedule).map(({ day, hours, key, isOpen }) => (
@@ -385,11 +490,11 @@ const CafeDetails = () => {
         </View>
 
         <View style={styles.reviewsSection}>
-          <Text style={styles.sectionTitle}>Reseñas ({reviews.length})</Text>
-          {reviews.length === 0 ? (
+          <Text style={styles.sectionTitle}>Reseñas ({reviews?.length || 0})</Text>
+          {!reviews || reviews.length === 0 ? (
             <Text style={styles.noReviewsText}>Todavía no hay reseñas</Text>
           ) : (
-            reviews.map((rev, idx) => (
+            reviews.filter(rev => rev && typeof rev === 'object').map((rev, idx) => (
               <View key={rev._id || `review-${idx}`} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
                   <Ionicons name="person-circle" size={32} color="#888" style={{ marginRight: 8 }} />
@@ -402,7 +507,7 @@ const CafeDetails = () => {
                     </View>
                   </View>
                 </View>
-                {rev.comment && (
+                {rev.comment && typeof rev.comment === 'string' && (
                   <Text style={styles.reviewComment}>{rev.comment}</Text>
                 )}
               </View>

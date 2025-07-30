@@ -38,6 +38,5 @@ export const clearAuthData = async () => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
   } catch (error) {
-    console.error(error);
   }
 };

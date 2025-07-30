@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 const { EXPO_PUBLIC_API_URL, EXPO_PUBLIC_AUTH0_DOMAIN, EXPO_PUBLIC_AUTH0_CLIENT_ID, EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_ID, EXPO_PUBLIC_AUTH0_BACKEND_CLIENT_SECRET, EXPO_PUBLIC_AUTH0_AUDIENCE } = Constants.expoConfig!.extra!;
-const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL;
+const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL as string;
 
 interface User {
   id: string;
@@ -139,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dispatch({ type: 'STOP_LOADING' });
       }
     } catch (error) {
-      console.error(error);
       dispatch({ type: 'STOP_LOADING' });
     }
   };
@@ -201,12 +200,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         userData = JSON.parse(userResponseText);
       } catch (parseError) {
-        console.error(parseError);
         throw new Error('Error al obtener datos del usuario');
       }
 
       if (!userRes.ok) {
-        console.error(userData);
         throw new Error(userData.error || 'Error al obtener rol del usuario');
       }
 
@@ -216,7 +213,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'LOGIN_SUCCESS', payload: { user: userData, token } });
 
     } catch (error) {
-      console.error(error);
       dispatch({ type: 'STOP_LOADING' });
       throw error;
     }
@@ -247,11 +243,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           errorData = JSON.parse(responseText);
         } catch (parseError) {
-          console.error(parseError);
           throw new Error('Error de conexión con Auth0. Verifica tu conexión a internet.');
         }
-
-        console.error(errorData);
 
         if (
           errorData.code === 'invalid_signup' &&
@@ -285,7 +278,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { needsVerification: true, role: data.role };
 
     } catch (error) {
-      console.error(error);
       dispatch({ type: 'STOP_LOADING' });
       throw error;
     }
@@ -339,12 +331,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         loginData = JSON.parse(loginResponseText);
       } catch (parseError) {
-        console.error(parseError);
         throw new Error('Error al iniciar sesión después de la verificación. Asegúrate de haber verificado tu email.');
       }
 
       if (!loginRes.ok) {
-        console.error(loginData);
         throw new Error(loginData.error_description || 'Error al iniciar sesión. Asegúrate de haber verificado tu email.');
       }
 
@@ -425,7 +415,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Error al verificar el café');
       }
     } catch (error) {
-      console.error(error);
       return false;
     }
   };
@@ -436,7 +425,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await AsyncStorage.removeItem('user');
       dispatch({ type: 'LOGOUT' });
     } catch (error) {
-      console.error(error);
     }
   };
 

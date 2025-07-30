@@ -5,10 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '../hooks/useNavigation';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
+import { CommonActions } from '@react-navigation/native';
 
 const STATIC_CATEGORIES = [
   {
@@ -36,19 +38,62 @@ interface QuickCategoriesProps {
 const QuickCategories: React.FC<QuickCategoriesProps> = ({ 
   categories = STATIC_CATEGORIES 
 }) => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleClick = async (name: string) => {
     try {
-      await AsyncStorage.removeItem("delatteFilters");
+      // Validar que tenemos un nombre válido
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return;
+      }
+
+      // Limpiar filtros previos de manera segura
+      try {
+        await AsyncStorage.removeItem("delatteFilters");
+      } catch (storageError) {
+        // Silently fail on storage error
+      }
+
+      // Intentar navegación principal
+      try {
+        navigation.dispatch(
+          CommonActions.navigate({
+            name: 'Explore',
+            params: {
+              screen: 'ExploreList',
+              params: { q: name.trim() },
+            }
+          })
+        );
+      } catch (navError) {
+        // Fallback: navegación simple
+        try {
+          (navigation as any).navigate('Explore', {
+            screen: 'ExploreList',
+            params: { q: name.trim() },
+          });
+        } catch (fallbackError) {
+          // Último fallback: solo Explore
+          try {
+            (navigation as any).navigate('Explore');
+          } catch (finalError) {
+            // Silently fail if all navigation attempts fail
+          }
+        }
+      }
     } catch (error) {
-      console.error('Error clearing filters:', error);
+      // En caso de cualquier error, silently fail
     }
-    navigation.navigate('Explore', {
-        screen: 'ExploreList',
-        params: { q: name },
-      } as any);
   };
+
+  // Validar categories de manera defensiva
+  const validCategories = Array.isArray(categories) ? categories : STATIC_CATEGORIES;
+  const safeCategories = validCategories.filter(cat => 
+    cat && 
+    typeof cat === 'object' && 
+    cat.name && 
+    typeof cat.name === 'string'
+  );
 
   return (
     <View style={styles.container}>
@@ -58,19 +103,25 @@ const QuickCategories: React.FC<QuickCategoriesProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoriesList}
       >
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat.name}
-            style={styles.categoryCard}
-            onPress={() => handleClick(cat.name)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.categoryImageWrapper}>
-              <Text style={styles.categoryEmoji}>{cat.image}</Text>
-            </View>
-            <Text style={styles.categoryName}>{cat.name}</Text>
-          </TouchableOpacity>
-        ))}
+        {safeCategories.map((cat, index) => {
+          return (
+            <TouchableOpacity
+              key={`${cat.name}-${index}`}
+              style={styles.categoryCard}
+              onPress={() => handleClick(cat.name)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.categoryImageWrapper}>
+                <Text style={styles.categoryEmoji}>
+                  {cat.image || '📦'}
+                </Text>
+              </View>
+              <Text style={styles.categoryName}>
+                {cat.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
     </View>
   );

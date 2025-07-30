@@ -7,12 +7,12 @@ import {
     StyleSheet,
     ScrollView,
     StatusBar,
+    ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
 import Constants from 'expo-constants';
-import { normalizeText } from '../utils/text';
 import Header from '../components/Header';
 import QuickCategories from '../components/QuickCategories';
 import FeaturedCafes from '../components/FeaturedCafes';
@@ -34,48 +34,89 @@ const HomeScreen = () => {
     const navigation = useNavigation();
     const [search, setSearch] = useState('');
     const [cafes, setCafes] = useState<Cafe[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const { state } = useAuth();
 
     useEffect(() => {
-        console.log('=== HOME SCREEN DEBUG ===');
-        console.log('HomeScreen iniciando...');
-        axios.get(`${API_URL}/cafes`)
-            .then((res) => {
-                if (Array.isArray(res.data)) {
-                    res.data.forEach((cafe) => {
-                    });
-                    setCafes(res.data);
-                } else {
-                }
-            })
-            .catch((err) => console.error("Error loading cafes:", err));
+        fetchCafes();
     }, []);
 
-    const handleSearch = () => {
-        if (!search.trim()) return;
+    const fetchCafes = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            if (!API_URL) {
+                setCafes([]);
+                return;
+            }
 
-        navigation.dispatch(
-            CommonActions.navigate({
-                name: 'Explore',
-                params: {
-                    screen: 'ExploreList',
-                    params: { q: search }
-                }
-            })
-        );
+            const response = await axios.get(`${API_URL}/cafes`);
+            
+            if (response.data && Array.isArray(response.data)) {
+                // Filtrar cafés válidos
+                const validCafes = response.data.filter(cafe => 
+                    cafe && 
+                    typeof cafe === 'object' && 
+                    cafe._id && 
+                    cafe.name
+                );
+                setCafes(validCafes);
+            } else {
+                setCafes([]);
+            }
+        } catch (error) {
+            setError('Error al cargar cafés');
+            setCafes([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSearch = () => {
+        try {
+            if (!search.trim()) return;
+
+            navigation.dispatch(
+                CommonActions.navigate({
+                    name: 'Explore',
+                    params: {
+                        screen: 'ExploreList',
+                        params: { q: search.trim() }
+                    }
+                })
+            );
+        } catch (error) {
+            // Navegación fallback
+            try {
+                navigation.navigate('Explore' as any);
+            } catch (fallbackError) {
+                // Silently fail
+            }
+        }
     };
 
     const handleMapNavigation = () => {
-        navigation.dispatch(
-            CommonActions.navigate({
-                name: 'Map'
-            })
-        );
+        try {
+            navigation.dispatch(
+                CommonActions.navigate({
+                    name: 'Map'
+                })
+            );
+        } catch (error) {
+            // Silently fail
+        }
+    };
+
+    const retryFetch = () => {
+        fetchCafes();
     };
 
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+            
             <Header />
 
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -113,7 +154,7 @@ const HomeScreen = () => {
                     </View>
                 </View>
 
-                <View style={styles.section}>
+                {/* <View style={styles.section}>
                     <QuickCategories />
                 </View>
 
@@ -131,8 +172,23 @@ const HomeScreen = () => {
                             <Text style={styles.viewMapText}>Ver mapa completo →</Text>
                         </TouchableOpacity>
                     </View>
-                    <CafeMap cafes={cafes} isPreview={true} />
-                </View>
+                    
+                    {loading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#301b0f" />
+                            <Text style={styles.loadingText}>Cargando mapa...</Text>
+                        </View>
+                    ) : error ? (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>❌ {error}</Text>
+                            <TouchableOpacity onPress={retryFetch} style={styles.retryButton}>
+                                <Text style={styles.retryButtonText}>Reintentar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <CafeMap cafes={cafes} isPreview={true} />
+                    )}
+                </View> */}
 
                 <View style={styles.bottomSpacing} />
             </ScrollView>
@@ -143,7 +199,7 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'linear-gradient(180deg, #f9fbfb 0%, #ffffff 100%);',
+        backgroundColor: '#f9fbfb',
     },
     scrollView: {
         flex: 1,
@@ -165,12 +221,14 @@ const styles = StyleSheet.create({
         color: '#301b0f',
         lineHeight: 28,
         marginBottom: 8,
+        textAlign: 'center',
     },
     bannerSubtitle: {
         fontSize: 14,
         color: '#7a7a7a',
         marginBottom: 20,
         lineHeight: 20,
+        textAlign: 'center',
     },
     searchContainer: {
         width: '100%',
@@ -249,6 +307,45 @@ const styles = StyleSheet.create({
     },
     bottomSpacing: {
         height: 20,
+    },
+    loadingContainer: {
+        height: 200,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8f9fa',
+        borderRadius: 16,
+    },
+    loadingText: {
+        marginTop: 8,
+        fontSize: 14,
+        color: '#7a7a7a',
+    },
+    errorContainer: {
+        height: 200,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8f9fa',
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#ffc107',
+        borderStyle: 'dashed',
+    },
+    errorText: {
+        fontSize: 14,
+        color: '#dc3545',
+        textAlign: 'center',
+        marginBottom: 12,
+    },
+    retryButton: {
+        backgroundColor: '#301b0f',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+    },
+    retryButtonText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
     },
 });
 

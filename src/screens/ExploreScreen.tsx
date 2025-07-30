@@ -12,7 +12,7 @@ import ExploreCafeCard from '../components/ExploreCafeCard';
 import { Cafe, ExploreFilters } from '../types/navigation';
 import { RouteProp, useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 
-const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL;
+const API_URL = Constants.expoConfig!.extra!.EXPO_PUBLIC_API_URL as string;
 
 type ExploreStackParamList = {
     ExploreList: {
@@ -79,7 +79,6 @@ const ExploreScreen = () => {
             setCafes(prev => reset ? newCafes : [...prev, ...newCafes]);
             setHasMore(newCafes.length === limit);
         } catch (err) {
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -106,10 +105,6 @@ const ExploreScreen = () => {
                 <Text style={styles.headerTitle}>Explorar Cafés</Text>
             </View>
 
-            <View style={{ padding: 10, backgroundColor: '#f0f0f0' }}>
-                <Text style={{ fontSize: 10 }}>Debug - Query: {searchQuery} | Search: {search}</Text>
-                <Text style={{ fontSize: 10 }}>Filters: {JSON.stringify(filters)}</Text>
-            </View>
             <View style={styles.searchBar}>
                 <TextInput
                     value={search}
