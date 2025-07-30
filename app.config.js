@@ -35,6 +35,7 @@ export default {
     android: {
       package: 'com.delatte.mobile',
       adaptiveIcon: {
+        foregroundImage: './src/assets/adaptive-icon.png',
         backgroundColor: '#ffffff'
       },
       config: {

@@ -154,7 +154,7 @@ const HomeScreen = () => {
                     </View>
                 </View>
 
-                {/* <View style={styles.section}>
+                <View style={styles.section}>
                     <QuickCategories />
                 </View>
 
@@ -188,7 +188,7 @@ const HomeScreen = () => {
                     ) : (
                         <CafeMap cafes={cafes} isPreview={true} />
                     )}
-                </View> */}
+                </View>
 
                 <View style={styles.bottomSpacing} />
             </ScrollView>

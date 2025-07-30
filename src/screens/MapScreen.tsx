@@ -61,7 +61,7 @@ const MapScreen = () => {
     const [modalVisible, setModalVisible] = useState(false);
     
     const defaultRegion = {
-        latitude: -34.9011,
+        latitude: -34.9011, 
         longitude: -56.1645,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
@@ -235,6 +235,7 @@ const MapScreen = () => {
                 <Text style={styles.headerTitle}>Mapa de Cafés</Text>
                 
                 <View style={styles.headerButtons}>
+                    {/* ⭐ Botón para centrar en Montevideo */}
                     <TouchableOpacity
                         style={styles.montevideoButton}
                         onPress={centerOnMontevideo}
@@ -242,6 +243,7 @@ const MapScreen = () => {
                         <Text style={styles.locationButtonText}>🏙️</Text>
                     </TouchableOpacity>
                     
+                    {/* Botón para centrar en usuario (solo si hay ubicación) */}
                     {userLocation && (
                         <TouchableOpacity
                             style={styles.locationButton}
@@ -259,7 +261,7 @@ const MapScreen = () => {
                 initialRegion={defaultRegion}
                 region={region}
                 onRegionChangeComplete={setRegion}
-                showsUserLocation={false}
+                showsUserLocation={false} 
                 showsMyLocationButton={false}
                 toolbarEnabled={false}
                 mapType="standard"
@@ -421,6 +423,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#301b0f',
         fontWeight: '600',
+        ...Platform.select({
+            android: {
+                fontFamily: 'sans-serif-medium',
+                includeFontPadding: false,
+            },
+        }),
     },
     headerTitle: {
         fontSize: 20,
@@ -428,53 +436,95 @@ const styles = StyleSheet.create({
         color: '#301b0f',
         flex: 1,
         textAlign: 'center',
+        ...Platform.select({
+            android: {
+                fontFamily: 'sans-serif-medium',
+                includeFontPadding: false,
+            },
+        }),
     },
     headerButtons: {
         flexDirection: 'row',
-        gap: 8,
+        gap: 6,
+        alignItems: 'center',
+        minWidth: 80,
     },
     montevideoButton: {
-        padding: 8,
+        padding: 6,
         backgroundColor: '#AC7851',
-        borderRadius: 20,
+        borderRadius: 18,
         width: 36,
         height: 36,
         alignItems: 'center',
         justifyContent: 'center',
+        ...Platform.select({
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     locationButton: {
-        padding: 8,
+        padding: 6,
         backgroundColor: '#301b0f',
-        borderRadius: 20,
+        borderRadius: 18,
         width: 36,
         height: 36,
         alignItems: 'center',
         justifyContent: 'center',
+        ...Platform.select({
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     locationButtonText: {
-        fontSize: 16,
+        fontSize: 14,
+        ...Platform.select({
+            android: {
+                textAlignVertical: 'center',
+                includeFontPadding: false,
+                lineHeight: 16,
+            },
+        }),
     },
     map: {
         flex: 1,
     },
     markerContainer: {
         backgroundColor: '#301b0f',
-        borderRadius: 20,
-        padding: 8,
+        borderRadius: 18,
+        width: 36,
+        height: 36,
+        justifyContent: 'center',
+        alignItems: 'center',
         borderWidth: 2,
         borderColor: '#fff',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 6,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+            },
+        }),
     },
     markerIcon: {
-        fontSize: 18,
+        fontSize: 16,
         color: '#fff',
+        ...Platform.select({
+            android: {
+                textAlignVertical: 'center',
+                includeFontPadding: false,
+                lineHeight: 18,
+            },
+        }),
     },
     modalOverlay: {
         flex: 1,
@@ -502,6 +552,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#301b0f',
         marginBottom: 12,
+        ...Platform.select({
+            android: {
+                fontFamily: 'sans-serif-medium',
+                includeFontPadding: false,
+            },
+        }),
     },
     ratingContainer: {
         flexDirection: 'row',
@@ -583,17 +639,33 @@ const styles = StyleSheet.create({
     infoText: {
         fontSize: 14,
         color: '#666',
+        ...Platform.select({
+            android: {
+                includeFontPadding: false,
+            },
+        }),
     },
     refreshButton: {
-        paddingVertical: 6,
-        paddingHorizontal: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 14,
         backgroundColor: '#f8f9fa',
-        borderRadius: 6,
+        borderRadius: 8,
+        ...Platform.select({
+            android: {
+                elevation: 1,
+            },
+        }),
     },
     refreshText: {
         fontSize: 12,
         color: '#301b0f',
         fontWeight: '600',
+        ...Platform.select({
+            android: {
+                fontFamily: 'sans-serif-medium',
+                includeFontPadding: false,
+            },
+        }),
     },
 });
 

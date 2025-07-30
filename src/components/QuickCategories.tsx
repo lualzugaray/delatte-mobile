@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -42,19 +43,15 @@ const QuickCategories: React.FC<QuickCategoriesProps> = ({
 
   const handleClick = async (name: string) => {
     try {
-      // Validar que tenemos un nombre válido
       if (!name || typeof name !== 'string' || !name.trim()) {
         return;
       }
 
-      // Limpiar filtros previos de manera segura
       try {
         await AsyncStorage.removeItem("delatteFilters");
       } catch (storageError) {
-        // Silently fail on storage error
       }
 
-      // Intentar navegación principal
       try {
         navigation.dispatch(
           CommonActions.navigate({
@@ -66,27 +63,22 @@ const QuickCategories: React.FC<QuickCategoriesProps> = ({
           })
         );
       } catch (navError) {
-        // Fallback: navegación simple
         try {
           (navigation as any).navigate('Explore', {
             screen: 'ExploreList',
             params: { q: name.trim() },
           });
         } catch (fallbackError) {
-          // Último fallback: solo Explore
           try {
             (navigation as any).navigate('Explore');
           } catch (finalError) {
-            // Silently fail if all navigation attempts fail
           }
         }
       }
     } catch (error) {
-      // En caso de cualquier error, silently fail
     }
   };
 
-  // Validar categories de manera defensiva
   const validCategories = Array.isArray(categories) ? categories : STATIC_CATEGORIES;
   const safeCategories = validCategories.filter(cat => 
     cat && 
@@ -102,6 +94,7 @@ const QuickCategories: React.FC<QuickCategoriesProps> = ({
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoriesList}
+        style={styles.scrollContainer}
       >
         {safeCategories.map((cat, index) => {
           return (
@@ -109,16 +102,18 @@ const QuickCategories: React.FC<QuickCategoriesProps> = ({
               key={`${cat.name}-${index}`}
               style={styles.categoryCard}
               onPress={() => handleClick(cat.name)}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
               <View style={styles.categoryImageWrapper}>
                 <Text style={styles.categoryEmoji}>
                   {cat.image || '📦'}
                 </Text>
               </View>
-              <Text style={styles.categoryName}>
-                {cat.name}
-              </Text>
+              <View style={styles.textContainer}>
+                <Text style={styles.categoryName} numberOfLines={2}>
+                  {cat.name}
+                </Text>
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -136,35 +131,72 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#301b0f',
     marginBottom: 16,
+    ...Platform.select({
+      android: {
+        fontFamily: 'sans-serif-medium',
+      },
+    }),
+  },
+  scrollContainer: {
   },
   categoriesList: {
     paddingRight: 20,
+    paddingVertical: 4,
   },
   categoryCard: {
-    padding: 16,
-    marginRight: 16,
-    borderRadius: 20,
-    shadowColor: '#000',
-    backgroundColor: 'rgba(172, 120, 81, 0.1)',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    padding: 14,
+    marginRight: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(172, 120, 81, 0.08)',
     alignItems: 'center',
-    minWidth: 90,
-    width: 90, 
+    justifyContent: 'center',
+    width: 95,
+    minHeight: 120,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+    }),
   },
   categoryImageWrapper: {
-    width: 50,
-    height: 50,
-    backgroundColor: 'rgba(172, 120, 81, 0.1)',
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    backgroundColor: 'rgba(172, 120, 81, 0.15)',
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+    ...Platform.select({
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   categoryEmoji: {
-    fontSize: 24,
+    fontSize: 22,
+    ...Platform.select({
+      android: {
+        textAlignVertical: 'center',
+        includeFontPadding: false,
+      },
+    }),
+  },
+  textContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 4,
   },
   categoryName: {
     fontSize: 11,
@@ -172,8 +204,13 @@ const styles = StyleSheet.create({
     color: '#301b0f',
     textAlign: 'center',
     lineHeight: 14,
-    flexWrap: 'wrap',
-    width: '100%',
+    ...Platform.select({
+      android: {
+        fontFamily: 'sans-serif-medium',
+        includeFontPadding: false,
+        textAlignVertical: 'center',
+      },
+    }),
   },
 });
 
