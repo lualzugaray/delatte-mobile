@@ -124,7 +124,7 @@ const QuickCategories: React.FC<QuickCategoriesProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
+    paddingLeft: 20,
   },
   title: {
     fontSize: 20,
@@ -140,12 +140,13 @@ const styles = StyleSheet.create({
   scrollContainer: {
   },
   categoriesList: {
+    paddingLeft: 20,
     paddingRight: 20,
     paddingVertical: 4,
   },
   categoryCard: {
     padding: 14,
-    marginRight: 14,
+    marginRight: 12,
     borderRadius: 16,
     backgroundColor: 'rgba(172, 120, 81, 0.08)',
     alignItems: 'center',
