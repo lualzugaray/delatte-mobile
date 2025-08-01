@@ -249,7 +249,7 @@ const ReviewFormModal: React.FC<ReviewFormModalProps> = ({
             } else if (error.response?.status === 403) {
                 errorMessage = 'Solo los clientes registrados pueden enviar reseñas';
             } else if (error.response?.status === 404) {
-                errorMessage = 'No se encontró el café o el endpoint. Verifica la configuración.';
+                errorMessage = 'Solo los clientes registrados pueden enviar reseñas';
             }
 
             Alert.alert('Error', errorMessage);
